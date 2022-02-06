@@ -3,18 +3,26 @@ import { StatusBar } from 'expo-status-bar';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker } from "react-native-maps";
 
-const API_KEY = "GX9GhQOZHQTGeAwHLtl08c8EHklTTANW"
+const LOCATION_API_KEY = "GX9GhQOZHQTGeAwHLtl08c8EHklTTANW"
+const RESTAURANTS_API_KEY = "DyDjeja69FYVYUTQuaf4IRXi3XimzTKd"
 
 export default function App() {
   const [address, setAddress] = useState()
-  const [region, setRegion] = useState({ latitude: 60.200692, longitude: 24.934302, latitudeDelta: 0.0322, longitudeDelta: 0.0221 })
+  const [region, setRegion] = useState({ latitude: 59.9795585, longitude: 25.4483983, latitudeDelta: 0.0322, longitudeDelta: 0.0221 })
+  const [restaurants, setRestaurants] = useState()
 
+  const getNearbyRestaurants = async (lat, lon) => {
+    const response = await fetch(`https://api.tomtom.com/search/2/categorySearch/restaurant.json?key=${RESTAURANTS_API_KEY}&lat=${lat}&lon=${lon}&limit=20`)
+    const data = await response.json()
+    setRestaurants(data.results)
+  }
 
   const switchLocation = async () => {
-    const response = await fetch(`https://www.mapquestapi.com/geocoding/v1/address?key=${API_KEY}&location=${address}`)
+    const response = await fetch(`https://www.mapquestapi.com/geocoding/v1/address?key=${LOCATION_API_KEY}&location=${address},FI`)
     const data = await response.json()
     const latLng = data.results[0].locations[0].latLng
     setRegion({ ...region, latitude: latLng.lat, longitude: latLng.lng })
+    getNearbyRestaurants(latLng.lat, latLng.lng)
     setAddress("")
   }
 
@@ -24,7 +32,9 @@ export default function App() {
         style={{ flex: 1 }}
         region={region}
       >
-        <Marker coordinate={{ latitude: 60.201373, longitude: 24.934041 }} title='Haaga-Helia' />
+        {restaurants !== undefined && restaurants.map((restaurant, index) => {
+          return <Marker key={index} coordinate={{ latitude: restaurant.position.lat, longitude: restaurant.position.lon }} title={restaurant.poi.name} description={restaurant.address.freeformAddress}/>
+        })}
       </MapView>
       <View style={styles.container}>
         <TextInput style={styles.input} onChangeText={text => setAddress(text)} value={address} placeholder="Address here" />
