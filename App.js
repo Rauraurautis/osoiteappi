@@ -17,26 +17,29 @@ export default function App() {
     setRestaurants(data.results)
   }
 
+  const getCurrentLocation = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync()
+    
+    if (status !== "granted") {
+      Alert.alert("No permission to get current location")
+      setRegion({ latitude: 100.9795585, longitude: 25.4483983, latitudeDelta: 0.0322, longitudeDelta: 0.0221 })
+      return
+    }
+    let currentLocation = await Location.getCurrentPositionAsync({})
+    const coords = { latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude }
+    setRegion({...currentLocation.coords, latitudeDelta: 0.0322, longitudeDelta: 0.0221})
+    getNearbyRestaurants(coords.latitude, coords.longitude)
+  }
+
   useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== "granted") {
-        Alert.alert("No permission to get current location")
-        setRegion({ latitude: 59.9795585, longitude: 25.4483983, latitudeDelta: 0.0322, longitudeDelta: 0.0221 })
-        return
-      }
-      let currentLocation = await Location.getCurrentPositionAsync({})
-      const coords = { latitude: currentLocation.coords.latitude, longitude: currentLocation.coords.longitude }
-      setRegion({ ...coords, latitudeDelta: 0.0322, longitudeDelta: 0.0221 })
-      getNearbyRestaurants(coords.latitude, coords.longitude)
-    })();
+    getCurrentLocation()
   }, [])
 
   const switchLocation = async () => {
     const response = await fetch(`https://www.mapquestapi.com/geocoding/v1/address?key=${LOCATION_API_KEY}&location=${address},FI`)
     const data = await response.json()
     const latLng = data.results[0].locations[0].latLng
-    setRegion({ ...region, latitude: latLng.lat, longitude: latLng.lng })
+    setRegion({ ...region, latitude: latLng.lat, longitude: latLng.lng, latitudeDelta: 0.0322, longitudeDelta: 0.0221 })
     getNearbyRestaurants(latLng.lat, latLng.lng)
     setAddress("")
   }
